@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:task_app/core/prefs_repo.dart';
 import 'package:task_app/features/task/presentation/pages/login_screen.dart';
-import 'package:task_app/features/task/presentation/pages/todo_item_widget.dart';
+import 'package:task_app/features/task/presentation/widgets/todo_item_widget.dart';
 
 import '../../../../common/utils.dart';
 import '../../../../core/service_locater.dart';
@@ -94,41 +94,7 @@ class _MyTodoScreenState extends State<MyTodoScreen> {
             ),
 
             // itemCount: state.todos.length,
-          );/*switch (state.todoDataStatus) {
-            GetDataStatus.loading => const Center(child: CircularProgressIndicator()),
-            GetDataStatus.loaded => PagedListView<int, Todo>(
-                pagingController: state.todoPaginationController,
-                builderDelegate: PagedChildBuilderDelegate(
-                  itemBuilder: (context, item, index) {
-                    return Container(
-                      decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadiusDirectional.circular(15)),
-                      padding: const EdgeInsetsDirectional.all(8),
-                      margin: EdgeInsetsDirectional.only(bottom: 10, end: 10, start: 10, top: index == 0 ? 10 : 0),
-                      child: TodoItemWidget(bloc: bloc,todo: item,),
-                    );
-                  },
-                ),
-
-                // itemCount: state.todos.length,
-              ),
-            GetDataStatus.empty => const Center(
-                child: Text('No Data yet,Add New Todo'),
-              ),
-            _ => PagedListView<int, Todo>(
-              pagingController: state.todoPaginationController,
-              builderDelegate: PagedChildBuilderDelegate(
-                itemBuilder: (context, item, index) {
-                  return Container(
-                    decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadiusDirectional.circular(15)),
-                    padding: const EdgeInsetsDirectional.all(8),
-                    margin: EdgeInsetsDirectional.only(bottom: 10, end: 10, start: 10, top: index == 0 ? 10 : 0),
-                    child: TodoItemWidget(bloc: bloc,todo: item,),
-                  );
-                },
-              ),
-
-              // itemCount: state.todos.length,
-            )          };*/
+          );
         },
       ),
       floatingActionButton: ValueListenableBuilder(
