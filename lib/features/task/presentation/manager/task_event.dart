@@ -3,7 +3,15 @@ part of 'task_bloc.dart';
 @immutable
 class TodoEvent {}
 
-class GetAllTodoEvent extends TodoEvent {}
+class GetAllTodoEvent extends TodoEvent {
+  final int page_key;
+  final int per_page;
+
+  GetAllTodoEvent({
+    required this.page_key,
+    this.per_page = 10,
+  });
+}
 
 class AddTodoEvent extends TodoEvent {
   final Todo todoModel;
@@ -35,11 +43,12 @@ class LoginUserEvent extends TodoEvent {
   final LoginParams loginParams;
   final VoidCallback onSuccess;
 
-   LoginUserEvent({
+  LoginUserEvent({
     required this.loginParams,
     required this.onSuccess,
   });
 }
+
 class RefreshTokenUserEvent extends TodoEvent {
   final RefreshTokenParams refreshTokenParams;
   final VoidCallback onSuccess;

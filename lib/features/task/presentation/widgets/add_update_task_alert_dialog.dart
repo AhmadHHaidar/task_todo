@@ -3,7 +3,6 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:task_app/core/prefs_repo.dart';
 import 'package:task_app/core/service_locater.dart';
-import 'package:task_app/features/task/data/models/task_model.dart';
 
 import '../../../../common/custom_app_text_field.dart';
 import '../../data/models/todo_model.dart';

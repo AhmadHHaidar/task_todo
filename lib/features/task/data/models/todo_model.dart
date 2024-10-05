@@ -55,6 +55,14 @@ class Todo extends Equatable {
       completed: map['completed'] == 1, // If 1, set as true
     );
   }
+  factory Todo.fromJsonApi(Map<String, dynamic> map) {
+    return Todo(
+      id: map['id'],
+      userId: map['userId'],
+      todo: map['todo'],
+      completed: map['completed'],
+    );
+  }
 
   Todo copyWith({
     String? todo,

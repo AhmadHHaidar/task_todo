@@ -7,7 +7,6 @@ import '../../../../core/api_utils.dart';
 import '../../../../core/usecase.dart';
 import '../../domain/repositories/task_repository.dart';
 import '../data_sources/task_remote_datasource.dart';
-import '../models/task_model.dart';
 
 @Injectable(as: TaskRepository)
 class TaskRepositoryImp implements TaskRepository {

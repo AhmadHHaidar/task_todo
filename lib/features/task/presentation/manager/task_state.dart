@@ -15,26 +15,30 @@ class TodoState extends Equatable {
   final List<Todo> todos;
   final UserModel currentUser;
   final GetDataStatus loginStatus;
+  final PagingController<int, Todo> todoPaginationController;
 
-  const TodoState({
+  TodoState({
     this.todoDataStatus = GetDataStatus.init,
     this.loginStatus = GetDataStatus.init,
     this.todos = const [],
     this.currentUser = const UserModel(),
-  });
+    final PagingController<int, Todo>? todoPaginationController,
+  }) : todoPaginationController = todoPaginationController ?? PagingController(firstPageKey: 0);
 
   @override
-  List<Object> get props => [todoDataStatus, todos,loginStatus,currentUser];
+  List<Object> get props => [todoDataStatus, todos, loginStatus, currentUser,todoPaginationController];
 
   TodoState copyWith({
     GetDataStatus? todoDataStatus,
     List<Todo>? todos,
     UserModel? currentUser,
     GetDataStatus? loginStatus,
+    final PagingController<int, Todo>? todoPaginationController,
   }) {
     return TodoState(
       todoDataStatus: todoDataStatus ?? this.todoDataStatus,
       todos: todos ?? this.todos,
+      todoPaginationController: todoPaginationController ?? this.todoPaginationController,
       loginStatus: loginStatus ?? this.loginStatus,
       currentUser: currentUser ?? this.currentUser,
     );

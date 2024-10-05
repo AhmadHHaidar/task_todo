@@ -73,7 +73,7 @@ void main() {
             ]),
           );
           when(mockDatabaseHelper!.getTodosWithPagination(10, 0)).thenAnswer((realInvocation) async => [todoItem1, todoItem2, todoItem3]);
-          bloc.add(GetAllTodoEvent());
+          bloc.add(GetAllTodoEvent(page_key: 0));
         },
         seed: () => seed = TodoState(),
         verify: (bloc) {
@@ -100,7 +100,7 @@ void main() {
             todoItem2,
             todoItem3,
           ])).thenAnswer((realInvocation) async => 1);
-          bloc.add(GetAllTodoEvent());
+          bloc.add(GetAllTodoEvent(page_key: 0));
         },
         seed: () => seed = TodoState(),
         verify: (bloc) {
@@ -191,7 +191,7 @@ void main() {
             (realInvocation) async => Left(Exception('message')),
           );
           when(mockDatabaseHelper!.getTodosWithPagination(10, 0)).thenAnswer((realInvocation) async => []);
-          bloc.add(GetAllTodoEvent());
+          bloc.add(GetAllTodoEvent(page_key: 0));
         },
         seed: () => seed = TodoState(),
         verify: (bloc) {

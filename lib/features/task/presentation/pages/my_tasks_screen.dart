@@ -3,12 +3,14 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:task_app/core/prefs_repo.dart';
 import 'package:task_app/features/task/presentation/pages/login_screen.dart';
+import 'package:task_app/features/task/presentation/pages/todo_item_widget.dart';
 
 import '../../../../common/utils.dart';
 import '../../../../core/service_locater.dart';
+import '../../data/models/todo_model.dart';
 import '../manager/task_bloc.dart';
 import '../widgets/add_update_task_alert_dialog.dart';
 
@@ -31,7 +33,12 @@ class _MyTodoScreenState extends State<MyTodoScreen> {
   @override
   void initState() {
     super.initState();
-    bloc = getIt<TodoBloc>()..add(GetAllTodoEvent());
+    bloc = getIt<TodoBloc>();
+    bloc.state.todoPaginationController.addPageRequestListener(
+      (pageKey) => bloc.add(
+        GetAllTodoEvent(page_key: pageKey),
+      ),
+    );
 
     ///THIS TIME TO DO ANIMATION EVERY 250 MILLISECONDS
     Timer.periodic(const Duration(milliseconds: 250), (Timer timer) {
@@ -73,122 +80,55 @@ class _MyTodoScreenState extends State<MyTodoScreen> {
       ),
       body: BlocBuilder<TodoBloc, TodoState>(
         builder: (context, state) {
-          return switch (state.todoDataStatus) {
-            GetDataStatus.loading => const Center(child: CircularProgressIndicator()),
-            GetDataStatus.loaded => ListView.builder(
-                itemBuilder: (context, index) => Container(
+          return PagedListView<int, Todo>(
+            pagingController: state.todoPaginationController,
+            builderDelegate: PagedChildBuilderDelegate(
+              itemBuilder: (context, item, index) {
+                return Container(
                   decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadiusDirectional.circular(15)),
                   padding: const EdgeInsetsDirectional.all(8),
                   margin: EdgeInsetsDirectional.only(bottom: 10, end: 10, start: 10, top: index == 0 ? 10 : 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Align(
-                          alignment: AlignmentDirectional.center,
-                          child: (state.todos[index].completed ?? false)
-                              ? Text(
-                                  'completed',
-                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.orange),
-                                )
-                              : Text(
-                                  'pending',
-                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.red),
-                                )),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(state.todos[index].todo),
-                          PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_horiz),
-                            onSelected: (value) {},
-                            itemBuilder: (BuildContext context) {
-                              return [
-                                PopupMenuItem<String>(
-                                  value: !(state.todos[index].completed) ? 'mark as Completed' : 'revert to pending',
-                                  child: Text(!(state.todos[index].completed) ? 'mark as Completed' : 'revert to pending'),
-                                  onTap: () {
-                                    bloc.add(UpdateTodoEvent(
-                                        todoModel: state.todos[index].copyWith(
-                                      completed: !(state.todos[index].completed),
-                                    )));
-                                  },
-                                ),
-                                PopupMenuItem<String>(
-                                  value: 'Delete',
-                                  child: const Text('Delete'),
-                                  onTap: () {
-                                    bloc.add(DeleteTodoEvent(state.todos[index]));
-                                  },
-                                ),
-                              ];
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                  child: TodoItemWidget(bloc: bloc,todo: item,),
+                );
+              },
+            ),
+
+            // itemCount: state.todos.length,
+          );/*switch (state.todoDataStatus) {
+            GetDataStatus.loading => const Center(child: CircularProgressIndicator()),
+            GetDataStatus.loaded => PagedListView<int, Todo>(
+                pagingController: state.todoPaginationController,
+                builderDelegate: PagedChildBuilderDelegate(
+                  itemBuilder: (context, item, index) {
+                    return Container(
+                      decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadiusDirectional.circular(15)),
+                      padding: const EdgeInsetsDirectional.all(8),
+                      margin: EdgeInsetsDirectional.only(bottom: 10, end: 10, start: 10, top: index == 0 ? 10 : 0),
+                      child: TodoItemWidget(bloc: bloc,todo: item,),
+                    );
+                  },
                 ),
-                itemCount: state.todos.length,
+
+                // itemCount: state.todos.length,
               ),
             GetDataStatus.empty => const Center(
                 child: Text('No Data yet,Add New Todo'),
               ),
-          _=>ListView.builder(
-            itemBuilder: (context, index) => Container(
-              decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadiusDirectional.circular(15)),
-              padding: const EdgeInsetsDirectional.all(8),
-              margin: EdgeInsetsDirectional.only(bottom: 10, end: 10, start: 10, top: index == 0 ? 10 : 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Align(
-                      alignment: AlignmentDirectional.center,
-                      child: (state.todos[index].completed ?? false)
-                          ? Text(
-                        'completed',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.orange),
-                      )
-                          : Text(
-                        'pending',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.red),
-                      )),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(state.todos[index].todo),
-                      PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_horiz),
-                        onSelected: (value) {},
-                        itemBuilder: (BuildContext context) {
-                          return [
-                            PopupMenuItem<String>(
-                              value: !(state.todos[index].completed) ? 'mark as Completed' : 'revert to pending',
-                              child: Text(!(state.todos[index].completed) ? 'mark as Completed' : 'revert to pending'),
-                              onTap: () {
-                                bloc.add(UpdateTodoEvent(
-                                    todoModel: state.todos[index].copyWith(
-                                      completed: !(state.todos[index].completed),
-                                    )));
-                              },
-                            ),
-                            PopupMenuItem<String>(
-                              value: 'Delete',
-                              child: const Text('Delete'),
-                              onTap: () {
-                                bloc.add(DeleteTodoEvent(state.todos[index]));
-                              },
-                            ),
-                          ];
-                        },
-                      ),
-                    ],
-                  ),
-                ],
+            _ => PagedListView<int, Todo>(
+              pagingController: state.todoPaginationController,
+              builderDelegate: PagedChildBuilderDelegate(
+                itemBuilder: (context, item, index) {
+                  return Container(
+                    decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadiusDirectional.circular(15)),
+                    padding: const EdgeInsetsDirectional.all(8),
+                    margin: EdgeInsetsDirectional.only(bottom: 10, end: 10, start: 10, top: index == 0 ? 10 : 0),
+                    child: TodoItemWidget(bloc: bloc,todo: item,),
+                  );
+                },
               ),
-            ),
-            itemCount: state.todos.length,
-          )
-          };
+
+              // itemCount: state.todos.length,
+            )          };*/
         },
       ),
       floatingActionButton: ValueListenableBuilder(

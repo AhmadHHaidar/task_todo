@@ -2,7 +2,7 @@ import 'package:injectable/injectable.dart';
 import 'package:task_app/features/task/data/models/todo_model.dart';
 import 'package:task_app/features/task/data/models/user_model.dart';
 import '../../../../core/usecase.dart';
-import '../../data/models/task_model.dart';
+
 import '../repositories/task_repository.dart';
 
 //TODO: SHOULD MOVE IT TO SEPARETER FEATURES

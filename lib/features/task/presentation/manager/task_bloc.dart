@@ -3,7 +3,8 @@ import 'dart:math';
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hive/hive.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+
 import 'package:injectable/injectable.dart';
 import 'package:meta/meta.dart';
 import 'package:task_app/core/prefs_repo.dart';
@@ -14,7 +15,7 @@ import 'package:task_app/features/task/data/models/user_model.dart';
 
 import '../../../../core/usecase.dart';
 import '../../../../main.dart';
-import '../../data/models/task_model.dart';
+
 import '../../domain/use_cases/add_task_use_case.dart';
 import '../../domain/use_cases/delete_task_use_case.dart';
 import '../../domain/use_cases/get_all_task_use_case.dart';
@@ -43,7 +44,7 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
     this.deleteTodoUseCase,
     this.loginUseCase,
     this.refreshTokenUseCase,
-  ) : super(const TodoState()) {
+  ) : super(TodoState()) {
     on<GetAllTodoEvent>(_onGetAllTodoEvent);
     on<AddTodoEvent>(_onAddTodoEvent);
     on<UpdateTodoEvent>(_onUpdateTodoEvent);
@@ -53,11 +54,20 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
   }
 
   FutureOr<void> _onGetAllTodoEvent(GetAllTodoEvent event, Emitter<TodoState> emit) async {
-    // var list = Hive.box<TaskModel>(keyBoxHive).values.toList();
-    // emit(state.copyWith(todoDataStatus: GetDataStatus.loaded, todos: list));
-    var list = await getIt<DatabaseHelper>().getTodosWithPagination(10, 0);
-    if (list.isNotEmpty) {
+    var list = await getIt<DatabaseHelper>().getTodosWithPagination(event.per_page, event.page_key * event.per_page);
+    if (list.isNotEmpty || event.page_key > 0) {
       emit(state.copyWith(todoDataStatus: GetDataStatus.loaded, todos: list));
+
+      print(list.length);
+      final isLastPage = list.length < event.per_page;
+
+      if (isLastPage) {
+        state.todoPaginationController.appendLastPage(list);
+      } else {
+        final nextPageKey = event.page_key + 1;
+        state.todoPaginationController.appendPage(list, nextPageKey.toInt());
+      }
+
       return;
     }
 
@@ -68,16 +78,20 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
       },
       (r) async {
         if (r.isNotEmpty) {
+          print(list.length);
+          final isLastPage = list.length < event.per_page;
+
+          if (isLastPage) {
+            state.todoPaginationController.appendLastPage(list);
+          } else {
+            final nextPageKey = event.page_key + 1;
+            state.todoPaginationController.appendPage(list, nextPageKey.toInt());
+          }
           emit(state.copyWith(todoDataStatus: GetDataStatus.loaded, todos: r));
           await getIt<DatabaseHelper>().insertTodos(r);
         } else {
           emit(state.copyWith(todoDataStatus: GetDataStatus.empty));
         }
-        // await Hive.box<TaskModel>(keyBoxHive).clear().then(
-        //   (value) async {
-        //     await Hive.box<TaskModel>(keyBoxHive).addAll(r.map((e) => e));
-        //   },
-        // );
       },
     );
   }
@@ -91,23 +105,21 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
       (r) async {
         emit(state.copyWith(todoDataStatus: GetDataStatus.loaded, todos: List.of(state.todos)..add(r)));
         event.onSuccess();
-        await getIt<DatabaseHelper>().insertTodo(r);
-
-        // await Hive.box<TaskModel>(keyBoxHive).add(r);
+        await getIt<DatabaseHelper>().insertTodo(r).then(
+          (value) {
+            state.todoPaginationController.refresh();
+          },
+        );
       },
     );
   }
 
   FutureOr<void> _onUpdateTodoEvent(UpdateTodoEvent event, Emitter<TodoState> emit) async {
     final result = await updateTodoUseCase(event.todoModel);
-    emit(state.copyWith(todos: List.of(state.todos).map((element) => element.id == event.todoModel.id ? event.todoModel : element).toList()));
     result.fold(
       (l) {
         emit(state.copyWith(
           todoDataStatus: GetDataStatus.failed,
-          todos: List.of(state.todos)
-              .map((element) => element.id == event.todoModel.id ? event.todoModel.copyWith(completed: !event.todoModel.completed) : element)
-              .toList(),
         ));
       },
       (r) async {
@@ -115,12 +127,24 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
           todoDataStatus: GetDataStatus.loaded,
         ));
         event.onSuccess?.call();
-        await getIt<DatabaseHelper>().updateTodoById(r);
+        await getIt<DatabaseHelper>().updateTodoById(r).then(
+          (value) {
+            // state.todoPaginationController.refresh();
+            state.todoPaginationController.itemList =
+                state.todoPaginationController.itemList?.map((element) => element.id == r.id ? r : element).toList();
+          },
+        );
       },
     );
   }
 
   FutureOr<void> _onDeleteTodoEvent(DeleteTodoEvent event, Emitter<TodoState> emit) async {
+    // await getIt<DatabaseHelper>().deleteTodoById(event.todoModel.id).then(
+    //   (value) {
+    //     state.todoPaginationController.itemList=List.of(state.todoPaginationController.itemList??[])..removeWhere((element) => element.id==event.todoModel.id,);
+    //   },
+    // );
+
     final result = await deleteTodoUseCase(event.todoModel);
     result.fold(
       (l) {
@@ -129,7 +153,12 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
       (r) async {
         emit(state.copyWith(
             todoDataStatus: GetDataStatus.loaded, todos: List.of(state.todos)..removeWhere((element) => element.id == event.todoModel.id)));
-        await getIt<DatabaseHelper>().deleteTodoById(r.id);
+        await getIt<DatabaseHelper>().deleteTodoById(r.id).then((value) {
+          state.todoPaginationController.itemList = List.of(state.todoPaginationController.itemList ?? [])
+            ..removeWhere(
+              (element) => element.id == event.todoModel.id,
+            );
+        });
       },
     );
   }
