@@ -69,31 +69,31 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
       }
 
       return;
-    }
+    } else {
+      final result = await getAllTodoUseCase(NoParams());
+      result.fold(
+        (l) {
+          emit(state.copyWith(todoDataStatus: GetDataStatus.failed, todos: []));
+        },
+        (r) async {
+          if (r.isNotEmpty) {
+            print(r.length);
+            final isLastPage = r.length < event.per_page;
 
-    final result = await getAllTodoUseCase(NoParams());
-    result.fold(
-      (l) {
-        emit(state.copyWith(todoDataStatus: GetDataStatus.failed, todos: []));
-      },
-      (r) async {
-        if (r.isNotEmpty) {
-          print(list.length);
-          final isLastPage = list.length < event.per_page;
-
-          if (isLastPage) {
-            state.todoPaginationController.appendLastPage(list);
+            if (isLastPage) {
+              state.todoPaginationController.appendLastPage(r);
+            } else {
+              final nextPageKey = event.page_key + 1;
+              state.todoPaginationController.appendPage(r, nextPageKey.toInt());
+            }
+            emit(state.copyWith(todoDataStatus: GetDataStatus.loaded, todos: r));
+            await getIt<DatabaseHelper>().insertTodos(r);
           } else {
-            final nextPageKey = event.page_key + 1;
-            state.todoPaginationController.appendPage(list, nextPageKey.toInt());
+            emit(state.copyWith(todoDataStatus: GetDataStatus.empty));
           }
-          emit(state.copyWith(todoDataStatus: GetDataStatus.loaded, todos: r));
-          await getIt<DatabaseHelper>().insertTodos(r);
-        } else {
-          emit(state.copyWith(todoDataStatus: GetDataStatus.empty));
-        }
-      },
-    );
+        },
+      );
+    }
   }
 
   FutureOr<void> _onAddTodoEvent(AddTodoEvent event, Emitter<TodoState> emit) async {
